@@ -9,6 +9,8 @@ services:
       - "--entrypoints.web.address=:80"
     ports:
       - "80:80"
+    environment:
+      TZ: "Europe/Moscow"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
@@ -19,6 +21,7 @@ services:
     container_name: poliglotim-api
     restart: unless-stopped
     environment:
+      TZ: "Europe/Moscow"
       PORT: "6060"
       DB_CONN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${PLYGLO_DB}
     labels:
@@ -32,6 +35,8 @@ services:
   site:
     image: ghcr.io/imirjar/plyglo-website:latest
     platform: linux/amd64
+    environment:
+      TZ: "Europe/Moscow"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.site.rule=Host(`plyglo.com`)"
@@ -43,6 +48,8 @@ services:
   app:
     image: ghcr.io/imirjar/plyglo-study:latest
     platform: linux/amd64
+    environment:
+      TZ: "Europe/Moscow"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app.rule=Host(`study.plyglo.com`)"
