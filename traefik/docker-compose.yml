@@ -1,0 +1,22 @@
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    depends_on:
+      authelia:
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080 # Dashboard
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./traefik.yml:/traefik.yml:ro
+      - ./acme.json:/etc/traefik/acme.json
+      - ./acme-staging.json:/etc/traefik/acme-staging.json
+      - ./config.yml:/config.yml:ro
+      - ./logs:/var/log/traefik
+    networks:
+      - platform-network

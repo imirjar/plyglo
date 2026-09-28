@@ -1,0 +1,40 @@
+api:
+  dashboard: true
+  insecure: true
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"
+
+providers:
+  docker:
+    endpoint: "tcp://socket-proxy:2375"
+    exposedByDefault: false
+    network: traefik
+  file:
+    filename: /config.yml
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: email@example.com # TODO: Replace with your email
+      storage: /etc/traefik/acme.json
+      tlsChallenge: {}
+  letsencrypt-staging:
+    acme:
+      email: email@example.com # TODO: Replace with your email
+      storage: /etc/traefik/acme-staging.json
+      caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+      tlsChallenge: {}
+
+log:
+  level: "INFO"
+  filePath: "/var/log/traefik/traefik.log"
+  format: json
+accessLog: {}

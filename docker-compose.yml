@@ -1,33 +1,22 @@
-services:
-  traefik:
-    image: traefik:latest  
-    container_name: traefik
-    command:
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=platform-network"
-      - "--entrypoints.web.address=:80"
-    ports:
-      - "80:80"
-    environment:
-      TZ: "Europe/Moscow"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    networks:
-      - platform-network
+include:
+  - authelia/docker-compose.yml # Identity Access Management (IAM) + Authentication
+  - traefik/docker-compose.yml  # API Gateway
 
+services:
   courses:
     image: ghcr.io/imirjar/poliglotim-api:latest
     container_name: poliglotim-api
     restart: unless-stopped
     environment:
-      TZ: "Europe/Moscow"
+      TZ: ${TZ}
       PORT: "6060"
       DB_CONN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${PLYGLO_DB}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.courses.rule=Host(`api.plyglo.com`)"
-      - "traefik.http.routers.courses.entrypoints=web"
+      - "traefik.http.routers.courses.entrypoints=websecure"
+      - "traefik.http.routers.courses.tls=true"
+      - "traefik.http.routers.courses.middlewares=authelia@docker"
       - "traefik.http.services.courses.loadbalancer.server.port=6060"
     networks:
       - platform-network
@@ -35,34 +24,33 @@ services:
   site:
     image: ghcr.io/imirjar/plyglo-website:latest
     platform: linux/amd64
+    restart: unless-stopped
     environment:
-      TZ: "Europe/Moscow"
+      TZ: ${TZ}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.site.rule=Host(`plyglo.com`)"
-      - "traefik.http.routers.site.entrypoints=web"
-      - "traefik.http.services.site.loadbalancer.server.port=80"
+      - "traefik.http.routers.site.entrypoints=websecure"
+      - "traefik.http.routers.site.tls=true"
+      - "traefik.http.services.site.loadbalancer.server.port=443"
     networks:
       - platform-network
 
   app:
     image: ghcr.io/imirjar/plyglo-study:latest
     platform: linux/amd64
+    restart: unless-stopped
     environment:
-      TZ: "Europe/Moscow"
+      TZ: ${TZ}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app.rule=Host(`study.plyglo.com`)"
-      - "traefik.http.routers.app.entrypoints=web"
+      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.tls=true"
       - "traefik.http.services.app.loadbalancer.server.port=80"
     networks:
       - platform-network
 
-
 networks:
   platform-network:
     driver: bridge
-
-volumes:
-  plyglo-website:
-  plyglo-app:
