@@ -17,7 +17,7 @@ providers:
   docker:
     endpoint: "tcp://socket-proxy:2375"
     exposedByDefault: false
-    network: traefik
+    network: platform-network
   file:
     filename: /config.yml
 certificatesResolvers:
