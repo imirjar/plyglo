@@ -1,0 +1,101 @@
+http:
+  middlewares:
+    authelia:
+      forwardAuth:                                        # ← ИСПРАВЛЕНО (было forwardauth)
+        address: "http://authelia:9091/api/verify?rd=https://auth.plyglo.com"  # ← хардкод вместо ${DOMAIN}
+        trustForwardHeader: true
+        authResponseHeaders:
+          - Remote-User
+          - Remote-Groups
+          - Remote-Name
+          - Remote-Email
+
+    ip-whitelist:
+      ipAllowList:
+        sourceRange:
+          - 192.168.0.0/16
+          - 10.0.0.0/8
+          - 172.16.0.0/12
+          - 127.0.0.1/32
+
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+
+    secure-headers:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - OPTIONS
+          - PUT
+        accessControlMaxAge: 100
+        hostsProxyHeaders:
+          - "X-Forwarded-Host"
+        stsSeconds: 63072000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        customFrameOptionsValue: SAMEORIGIN
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "same-origin"
+        permissionsPolicy: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), vr=()"
+        customResponseHeaders:
+          X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex,"
+          server: ""
+
+    api-headers:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - PATCH
+          - OPTIONS
+        accessControlMaxAge: 100
+        hostsProxyHeaders:
+          - "X-Forwarded-Host"
+        stsSeconds: 63072000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        customFrameOptionsValue: SAMEORIGIN
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "no-referrer"
+        permissionsPolicy: "camera=(), microphone=(), geolocation=()"
+        customResponseHeaders:
+          server: ""
+
+    chain-secure:
+      chain:
+        middlewares:
+          - rate-limit
+          - secure-headers
+          - authelia
+
+    chain-secure-ip:
+      chain:
+        middlewares:
+          - ip-whitelist
+          - rate-limit
+          - secure-headers
+          - authelia
+
+    chain-no-auth:
+      chain:
+        middlewares:
+          - rate-limit
+          - secure-headers
+
+    chain-api:
+      chain:
+        middlewares:
+          - rate-limit
+          - api-headers
+          - authelia
+
+  # Заготовка на случай, если Caddy внутри study отдаёт HTTPS
+  serversTransports:
+    insecure-transport:
+      insecureSkipVerify: true

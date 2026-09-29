@@ -1,6 +1,6 @@
 include:
-  - authelia/docker-compose.yml # Identity Access Management (IAM) + Authentication
-  - traefik/docker-compose.yml  # API Gateway
+  - authelia/docker-compose.yml
+  - traefik/docker-compose.yml
 
 services:
   courses:
@@ -16,7 +16,8 @@ services:
       - "traefik.http.routers.courses.rule=Host(`api.plyglo.com`)"
       - "traefik.http.routers.courses.entrypoints=websecure"
       - "traefik.http.routers.courses.tls=true"
-      - "traefik.http.routers.courses.middlewares=authelia@docker"
+      - "traefik.http.routers.courses.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.courses.middlewares=chain-api@file"     # ← было authelia@docker
       - "traefik.http.services.courses.loadbalancer.server.port=6060"
     networks:
       - platform-network
@@ -32,7 +33,9 @@ services:
       - "traefik.http.routers.site.rule=Host(`plyglo.com`)"
       - "traefik.http.routers.site.entrypoints=websecure"
       - "traefik.http.routers.site.tls=true"
-      - "traefik.http.services.site.loadbalancer.server.port=443"
+      - "traefik.http.routers.site.tls.certresolver=letsencrypt"     # ← добавили
+      - "traefik.http.routers.site.middlewares=chain-no-auth@file"   # ← публичный
+      - "traefik.http.services.site.loadbalancer.server.port=80"     # ← было 443, у вас nginx :80
     networks:
       - platform-network
 
@@ -47,7 +50,9 @@ services:
       - "traefik.http.routers.app.rule=Host(`study.plyglo.com`)"
       - "traefik.http.routers.app.entrypoints=websecure"
       - "traefik.http.routers.app.tls=true"
-      - "traefik.http.services.app.loadbalancer.server.port=80"
+      - "traefik.http.routers.app.tls.certresolver=letsencrypt"      # ← добавили
+      - "traefik.http.routers.app.middlewares=chain-no-auth@file"    # ← публичный
+      - "traefik.http.services.app.loadbalancer.server.port=80"      # ← Caddy, если редиректит — см. п.5 ниже
     networks:
       - platform-network
 

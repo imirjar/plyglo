@@ -1,23 +1,24 @@
 services:
   traefik:
-    image: traefik:latest
+    image: traefik:v3.7.13                    # зафиксировали версию
     container_name: traefik
     restart: unless-stopped
     depends_on:
       - authelia
     ports:
-      - 80:80
-      - 443:443
-      - 8080:8080 # Dashboard
+      - "80:80"
+      - "443:443"
+      - "127.0.0.1:8080:8080"                 # dashboard только локально
     environment:
       TZ: ${TZ}
+      DOMAIN: ${DOMAIN}                       # для возможных шаблонов
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /etc/localtime:/etc/localtime:ro
-      - ./traefik.yml:/traefik.yml:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro   # ← ИСПРАВЛЕНО (было /traefik.yml)
+      - ./config.yml:/etc/traefik/config.yml:ro     # ← сменили путь, чтобы был единый стиль
       - ./acme.json:/etc/traefik/acme.json
       - ./acme-staging.json:/etc/traefik/acme-staging.json
-      - ./config.yml:/config.yml:ro
       - ./logs:/var/log/traefik
     networks:
       - platform-network

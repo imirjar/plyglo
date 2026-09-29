@@ -1,6 +1,7 @@
 api:
   dashboard: true
-  insecure: true
+  insecure: true      # безопасно, потому что порт слушает только 127.0.0.1
+
 entryPoints:
   web:
     address: ":80"
@@ -18,22 +19,18 @@ providers:
     exposedByDefault: false
     network: platform-network
   file:
-    filename: /config.yml
+    filename: /etc/traefik/config.yml     # ← путь синхронизирован с монтированием
+
 certificatesResolvers:
   letsencrypt:
     acme:
-      email: email@example.com # TODO: Replace with your email
+      email: azadorov1234@gmail.com
       storage: /etc/traefik/acme.json
-      tlsChallenge: {}
-  letsencrypt-staging:
-    acme:
-      email: email@example.com # TODO: Replace with your email
-      storage: /etc/traefik/acme-staging.json
-      caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
       tlsChallenge: {}
 
 log:
   level: "INFO"
   filePath: "/var/log/traefik/traefik.log"
   format: json
+
 accessLog: {}
