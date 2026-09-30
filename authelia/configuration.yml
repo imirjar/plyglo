@@ -79,10 +79,8 @@ storage:
   local:
     path: '/config/db.sqlite3'
 
-# smtp:
 notifier:
-  filesystem:
-      # filename: '/config/notification.txt'
+  smtp:
     address: '{{ env "EMAIL_SERVER_ADDRESS" }}'
     username: '{{ env "EMAIL_FROM" }}'
     password: '{{ env "EMAIL_SERVER_PASSWORD" }}'
