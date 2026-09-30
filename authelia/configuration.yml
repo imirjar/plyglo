@@ -79,13 +79,13 @@ storage:
   local:
     path: '/config/db.sqlite3'
 
+# smtp:
 notifier:
   filesystem:
-      filename: '/config/notification.txt'
-  # smtp:
-  #   address: 'smtp://{{ env "EMAIL_SERVER" }}:{{ env "EMAIL_SERVER_PORT" }}'
-  #   username: '{{ env "EMAIL_SERVER_USER" }}'
-  #   password: '{{ env "EMAIL_SERVER_PASSWORD" }}'
-  #   sender: 'Authelia <{{ env "EMAIL_FROM" }}>'
-  #   identifier: '{{ env "DOMAIN" }}'
-  #   subject: "[Authelia] {title}"
+      # filename: '/config/notification.txt'
+    address: '{{ env "EMAIL_SERVER_ADDRESS" }}'
+    username: '{{ env "EMAIL_FROM" }}'
+    password: '{{ env "EMAIL_SERVER_PASSWORD" }}'
+    sender: 'Authelia <{{ env "EMAIL_FROM" }}>'
+    identifier: '{{ env "DOMAIN" }}'
+    subject: '[Authelia] {title}'
