@@ -128,11 +128,3 @@ services:
     security_opt:
       - no-new-privileges:true
 
-# ─────────────────────────────────────────────────────────────
-# Сеть. Она создаётся в КОРНЕВОМ docker-compose.yml с явным
-# именем "platform-network". Здесь мы её только подключаем.
-# Без external: true Compose создаст auth_platform-network
-# и сервисы не увидят traefik.
-# ─────────────────────────────────────────────────────────────
-networks:
-  platform-network
