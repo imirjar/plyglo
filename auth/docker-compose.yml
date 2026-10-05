@@ -135,5 +135,4 @@ services:
 # и сервисы не увидят traefik.
 # ─────────────────────────────────────────────────────────────
 networks:
-  platform-network:
-    external: true
+  platform-network
