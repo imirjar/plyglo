@@ -3,9 +3,9 @@ include:
   - traefik/docker-compose.yml
 
 services:
-  courses:
+  courses-v1:
     image: ghcr.io/imirjar/poliglotim-api:latest
-    container_name: poliglotim-api
+    container_name: poliglotim-api-v1
     restart: unless-stopped
     environment:
       TZ: ${TZ}
@@ -13,12 +13,37 @@ services:
       DB_CONN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${PLYGLO_DB}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.courses.rule=Host(`api.plyglo.com`)"
-      - "traefik.http.routers.courses.entrypoints=websecure"
-      - "traefik.http.routers.courses.tls=true"
-      - "traefik.http.routers.courses.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.courses.middlewares=chain-api@file"     # ← было authelia@docker
-      - "traefik.http.services.courses.loadbalancer.server.port=6060"
+      # Роутер для v1
+      - "traefik.http.routers.courses-v1.rule=Host(`api.plyglo.com`) && PathPrefix(`/v1`)"
+      - "traefik.http.routers.courses-v1.entrypoints=websecure"
+      - "traefik.http.routers.courses-v1.tls=true"
+      - "traefik.http.routers.courses-v1.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.courses-v1.middlewares=strip-v1,chain-no-auth@file" # chain-api@file можно оставить
+      - "traefik.http.services.courses-v1.loadbalancer.server.port=6060"
+      # Middleware для удаления префикса /v1
+      - "traefik.http.middlewares.strip-v1.stripprefix.prefixes=/v1"
+    networks:
+      - platform-network
+
+  courses-v2:
+    image: ghcr.io/imirjar/poliglotim-api:latest   # замените на ваш новый образ
+    container_name: poliglotim-api-v2
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      PORT: "6060"
+      DB_CONN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${PLYGLO_DB}
+    labels:
+      - "traefik.enable=true"
+      # Роутер для v2
+      - "traefik.http.routers.courses-v2.rule=Host(`api.plyglo.com`) && PathPrefix(`/v2`)"
+      - "traefik.http.routers.courses-v2.entrypoints=websecure"
+      - "traefik.http.routers.courses-v2.tls=true"
+      - "traefik.http.routers.courses-v2.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.courses-v2.middlewares=strip-v2,chain-api@file"
+      - "traefik.http.services.courses-v2.loadbalancer.server.port=6060"
+      # Middleware для удаления префикса /v2
+      - "traefik.http.middlewares.strip-v2.stripprefix.prefixes=/v2"
     networks:
       - platform-network
 
@@ -53,6 +78,24 @@ services:
       - "traefik.http.routers.app.tls.certresolver=letsencrypt"      # ← добавили
       - "traefik.http.routers.app.middlewares=chain-no-auth@file"    # ← публичный
       - "traefik.http.services.app.loadbalancer.server.port=80"      # ← Caddy, если редиректит — см. п.5 ниже
+    networks:
+      - platform-network
+
+  dev: #pls delete it after
+    image: ghcr.io/imirjar/plyglo-expo:latest
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      Port: 3000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dev.rule=Host(`dev.plyglo.com`)"
+      - "traefik.http.routers.dev.entrypoints=websecure"
+      - "traefik.http.routers.dev.tls=true"
+      - "traefik.http.routers.dev.tls.certresolver=letsencrypt"      # ← добавили
+      - "traefik.http.routers.dev.middlewares=chain-no-auth@file"    # ← публичный
+      - "traefik.http.services.dev.loadbalancer.server.port=3000"      # ← Caddy, если редиректит — см. п.5 ниже
     networks:
       - platform-network
 
