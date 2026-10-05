@@ -1,5 +1,5 @@
 include:
-  - authelia/docker-compose.yml
+  - auth/docker-compose.yml
   - traefik/docker-compose.yml
 
 services:

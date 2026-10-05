@@ -1,0 +1,139 @@
+services:
+
+  # ─────────────────────────────────────────────────────────────
+  # Authelia — единая точка аутентификации (SSO + 2FA + портал)
+  # ─────────────────────────────────────────────────────────────
+  authelia:
+    image: authelia/authelia:latest
+    container_name: authelia
+    restart: unless-stopped
+
+    # Секреты и переменные окружения.
+    # Все ${...} берутся из .env рядом с корневым compose-файлом.
+    environment:
+      # Позволяет использовать {{ env "VAR" }} внутри configuration.yml
+      - X_AUTHELIA_CONFIG_FILTERS=template
+      - TZ=${TZ}
+      - DOMAIN=${DOMAIN}
+
+      # ── Email (для писем подтверждения/сброса пароля) ──
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_SERVER_PASSWORD=${EMAIL_SERVER_PASSWORD}
+      - EMAIL_SERVER_ADDRESS=${EMAIL_SERVER_ADDRESS}
+
+      # ── Секреты самой Authelia (генерируются заранее) ──
+      - AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=${AUTHELIA_JWT_PASSWORD}
+      - AUTHELIA_SESSION_SECRET=${AUTHELIA_SESSION_SECRET}
+      - AUTHELIA_STORAGE_ENCRYPTION_KEY=${AUTHELIA_STORAGE_ENCRYPTION_KEY}
+
+      # ── Пароль сервисного аккаунта для подключения к LLDAP ──
+      # Используется в configuration.yml как ${LLDAP_BIND_PASSWORD}
+      - LLDAP_BIND_PASSWORD=${LLDAP_BIND_PASSWORD}
+
+    volumes:
+      # Конфиги/секреты Authelia лежат в ./authelia и монтируются в /config
+      - ./authelia:/config
+      # Логи — отдельно, чтобы удобно было чистить
+      - ./authelia/logs:/var/log/authelia
+
+    networks:
+      - platform-network
+
+    # Метки для Traefik (роутинг), CrowdSec, Diun, Homepage.
+    # Traefik сам обнаружит контейнер и настроит роутер для auth.${DOMAIN}.
+    labels:
+      - "crowdsec.enable=true"
+      - "crowdsec.labels.type=authelia"
+      - "diun.enable=true"
+      - "homepage.group=Security"
+      - "homepage.name=Authelia"
+      - "homepage.icon=authelia.png"
+      - "homepage.href=https://auth.${DOMAIN}"
+      - "homepage.description=Authentication"
+
+      - "traefik.enable=true"
+      - "traefik.http.routers.authelia.entrypoints=websecure"
+      - "traefik.http.routers.authelia.rule=Host(`auth.${DOMAIN}`)"
+      - "traefik.http.routers.authelia.tls=true"
+      - "traefik.http.routers.authelia.tls.certresolver=letsencrypt"
+      # chain-no-auth@file — цепочка middleware из traefik/config.yml,
+      # которая НЕ требует логина (иначе получится бесконечный редирект
+      # на портал самого Authelia)
+      - "traefik.http.routers.authelia.middlewares=chain-no-auth@file"
+
+    security_opt:
+      - no-new-privileges:true
+
+    # Authelia должна стартовать ПОСЛЕ lldap, иначе при первом
+    # запуске не сможет подключиться к каталогу.
+    depends_on:
+      - lldap
+
+  # ─────────────────────────────────────────────────────────────
+  # LLDAP — лёгкий LDAP-сервер с веб-интерфейсом.
+  # Здесь хранятся пользователи и группы.
+  # ─────────────────────────────────────────────────────────────
+  lldap:
+    image: lldap/lldap:stable
+    container_name: lldap
+    restart: unless-stopped
+
+    environment:
+      TZ: ${TZ}
+
+      # ── Обязательные секреты ──
+      # JWT-секрет для сессий UI. После первого запуска НЕ менять.
+      LLDAP_JWT_SECRET: ${LLDAP_JWT_SECRET}
+      # Пароль встроенного администратора (логин всегда "admin").
+      LLDAP_LDAP_USER_PASS: ${LLDAP_ADMIN_PASSWORD}
+      # Корень каталога. Пользователи будут в ou=people,<base_dn>,
+      # группы — в ou=groups,<base_dn>.
+      LLDAP_LDAP_BASE_DN: ${LLDAP_BASE_DN}
+
+      # ── HTTP (веб-интерфейс) ──
+      LLDAP_HTTP_PORT: "17170"
+      LLDAP_HTTP_URL: https://ldap.${DOMAIN}
+
+      # ── LDAP (то, к чему подключается Authelia и другие сервисы) ──
+      LLDAP_LDAP_PORT: "3890"
+
+      # Опционально: почта админа (для отображения в UI)
+      # LLDAP_LDAP_USER_EMAIL: admin@${DOMAIN}
+
+    volumes:
+      # SQLite-база lldap. Обязательно бэкапить.
+      - ./lldap/data:/data
+
+    networks:
+      - platform-network
+
+    labels:
+      - "diun.enable=true"
+      - "homepage.group=Security"
+      - "homepage.name=LLDAP"
+      - "homepage.icon=lldap.png"
+      - "homepage.href=https://ldap.${DOMAIN}"
+      - "homepage.description=LDAP directory"
+
+      - "traefik.enable=true"
+      - "traefik.http.routers.lldap.entrypoints=websecure"
+      - "traefik.http.routers.lldap.rule=Host(`ldap.${DOMAIN}`)"
+      - "traefik.http.routers.lldap.tls=true"
+      - "traefik.http.routers.lldap.tls.certresolver=letsencrypt"
+      # chain-no-auth@file — у lldap свой логин, не надо прятать за Authelia
+      - "traefik.http.routers.lldap.middlewares=chain-no-auth@file"
+      # Внутри контейнера UI слушает 17170 (LDAP — 3890)
+      - "traefik.http.services.lldap.loadbalancer.server.port=17170"
+
+    security_opt:
+      - no-new-privileges:true
+
+# ─────────────────────────────────────────────────────────────
+# Сеть. Она создаётся в КОРНЕВОМ docker-compose.yml с явным
+# именем "platform-network". Здесь мы её только подключаем.
+# Без external: true Compose создаст auth_platform-network
+# и сервисы не увидят traefik.
+# ─────────────────────────────────────────────────────────────
+networks:
+  platform-network:
+    external: true
