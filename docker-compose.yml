@@ -18,7 +18,7 @@ services:
       - "traefik.http.routers.courses-v1.entrypoints=websecure"
       - "traefik.http.routers.courses-v1.tls=true"
       - "traefik.http.routers.courses-v1.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.courses-v1.middlewares=strip-v1,chain-no-auth@file" # chain-api@file можно оставить
+      - "traefik.http.routers.courses-v1.middlewares=strip-v1" # chain-api@file можно оставить
       - "traefik.http.services.courses-v1.loadbalancer.server.port=6060"
       # Middleware для удаления префикса /v1
       - "traefik.http.middlewares.strip-v1.stripprefix.prefixes=/v1"
