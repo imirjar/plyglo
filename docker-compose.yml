@@ -58,30 +58,13 @@ services:
       - "traefik.http.routers.site.rule=Host(`plyglo.com`)"
       - "traefik.http.routers.site.entrypoints=websecure"
       - "traefik.http.routers.site.tls=true"
-      - "traefik.http.routers.site.tls.certresolver=letsencrypt"     # ← добавили
-      - "traefik.http.routers.site.middlewares=chain-no-auth@file"   # ← публичный
-      - "traefik.http.services.site.loadbalancer.server.port=80"     # ← было 443, у вас nginx :80
+      - "traefik.http.routers.site.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.site.middlewares=chain-no-auth@file"
+      - "traefik.http.services.site.loadbalancer.server.port=80"
     networks:
       - platform-network
 
-  app:
-    image: ghcr.io/imirjar/plyglo-study:latest
-    platform: linux/amd64
-    restart: unless-stopped
-    environment:
-      TZ: ${TZ}
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`study.plyglo.com`)"
-      - "traefik.http.routers.app.entrypoints=websecure"
-      - "traefik.http.routers.app.tls=true"
-      - "traefik.http.routers.app.tls.certresolver=letsencrypt"      # ← добавили
-      - "traefik.http.routers.app.middlewares=chain-no-auth@file"    # ← публичный
-      - "traefik.http.services.app.loadbalancer.server.port=80"      # ← Caddy, если редиректит — см. п.5 ниже
-    networks:
-      - platform-network
-
-  dev: #pls delete it after
+  study:
     image: ghcr.io/imirjar/plyglo-expo:latest
     platform: linux/amd64
     restart: unless-stopped
@@ -90,12 +73,12 @@ services:
       Port: 3000
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dev.rule=Host(`dev.plyglo.com`)"
-      - "traefik.http.routers.dev.entrypoints=websecure"
-      - "traefik.http.routers.dev.tls=true"
-      - "traefik.http.routers.dev.tls.certresolver=letsencrypt"      # ← добавили
-      - "traefik.http.routers.dev.middlewares=chain-no-auth@file"    # ← публичный
-      - "traefik.http.services.dev.loadbalancer.server.port=3000"      # ← Caddy, если редиректит — см. п.5 ниже
+      - "traefik.http.routers.study.rule=Host(`study.plyglo.com`)"
+      - "traefik.http.routers.study.entrypoints=websecure"
+      - "traefik.http.routers.study.tls=true"
+      - "traefik.http.routers.study.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.study.middlewares=chain-no-auth@file"
+      - "traefik.http.services.study.loadbalancer.server.port=3000"
     networks:
       - platform-network
 
