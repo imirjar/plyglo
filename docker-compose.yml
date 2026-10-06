@@ -49,6 +49,7 @@ services:
 
   site:
     image: ghcr.io/imirjar/plyglo-website:latest
+    container_name: site
     platform: linux/amd64
     restart: unless-stopped
     environment:
@@ -66,6 +67,7 @@ services:
 
   study:
     image: ghcr.io/imirjar/plyglo-expo:latest
+    container_name: study
     platform: linux/amd64
     restart: unless-stopped
     environment:
