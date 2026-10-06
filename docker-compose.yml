@@ -14,7 +14,7 @@ services:
     labels:
       - "traefik.enable=true"
       # Роутер для v1
-      - "traefik.http.routers.courses-v1.rule=Host(`api.plyglo.com/v1`) && PathPrefix(`/v1`)"
+      - "traefik.http.routers.courses-v1.rule=Host(`api.plyglo.com`) && PathPrefix(`/v1`)"
       - "traefik.http.routers.courses-v1.entrypoints=websecure"
       - "traefik.http.routers.courses-v1.tls=true"
       - "traefik.http.routers.courses-v1.tls.certresolver=letsencrypt"
