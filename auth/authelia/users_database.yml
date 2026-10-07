@@ -1,9 +1,0 @@
-users:
-  admin:
-    #password: PlygloTest2026!
-    disabled: false
-    displayname: 'Plyglo Admin'
-    password: '$argon2id$v=19$m=65536,t=3,p=4$eojLj5TMoQvL1ZH3RITrgQ$yjnX4yKo9VBL9Gj5OuFduxJtDHQM2rec5DLom5H0Y0s'
-    email: 'azadorov1234@gmail.com'
-    groups:
-      - 'admins'
