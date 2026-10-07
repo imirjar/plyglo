@@ -25,6 +25,29 @@ services:
     networks:
       - platform-network
 
+  courses-protected:
+    image: ghcr.io/imirjar/poliglotim-api:latest
+    container_name: courses-protected
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      PORT: "6060"
+      DB_CONN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${PLYGLO_DB}
+    labels:
+      - "traefik.enable=true"
+      # Роутер для v2 (защищённый)
+      - "traefik.http.routers.courses-protected.rule=Host(`api.plyglo.com`) && PathPrefix(`/v2`)"
+      - "traefik.http.routers.courses-protected.entrypoints=websecure"
+      - "traefik.http.routers.courses-protected.tls=true"
+      - "traefik.http.routers.courses-protected.tls.certresolver=letsencrypt"
+      # Порядок middleware: сначала strip-v2, потом authentik-forwardauth
+      - "traefik.http.routers.courses-protected.middlewares=strip-v2,authentik-forwardauth@docker"
+      - "traefik.http.services.courses-protected.loadbalancer.server.port=6060"
+      # Middleware для удаления префикса /v2
+      - "traefik.http.middlewares.strip-v2.stripprefix.prefixes=/v2"
+    networks:
+      - platform-network
+
   site:
     image: ghcr.io/imirjar/plyglo-website:latest
     container_name: site

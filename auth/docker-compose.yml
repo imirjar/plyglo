@@ -1,130 +1,134 @@
+# auth/docker-compose.yml
+version: '3.8'
+
 services:
-
-  # ─────────────────────────────────────────────────────────────
-  # Authelia — единая точка аутентификации (SSO + 2FA + портал)
-  # ─────────────────────────────────────────────────────────────
-  authelia:
-    image: authelia/authelia:latest
-    container_name: authelia
+  # --- Базы данных и кэш для Authentik ---
+  postgresql:
+    image: postgres:16-alpine
+    container_name: authentik-postgresql
     restart: unless-stopped
-
-    # Секреты и переменные окружения.
-    # Все ${...} берутся из .env рядом с корневым compose-файлом.
     environment:
-      # Позволяет использовать {{ env "VAR" }} внутри configuration.yml
-      - X_AUTHELIA_CONFIG_FILTERS=template
-      - TZ=${TZ}
-      - DOMAIN=${DOMAIN}
-
-      # ── Email (для писем подтверждения/сброса пароля) ──
-      - EMAIL_FROM=${EMAIL_FROM}
-      - EMAIL_SERVER_PASSWORD=${EMAIL_SERVER_PASSWORD}
-      - EMAIL_SERVER_ADDRESS=${EMAIL_SERVER_ADDRESS}
-
-      # ── Секреты самой Authelia (генерируются заранее) ──
-      - AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=${AUTHELIA_JWT_PASSWORD}
-      - AUTHELIA_SESSION_SECRET=${AUTHELIA_SESSION_SECRET}
-      - AUTHELIA_STORAGE_ENCRYPTION_KEY=${AUTHELIA_STORAGE_ENCRYPTION_KEY}
-
-      # ── Пароль сервисного аккаунта для подключения к LLDAP ──
-      # Используется в configuration.yml как ${LLDAP_BIND_PASSWORD}
-      - LLDAP_BIND_PASSWORD=${LLDAP_BIND_PASSWORD}
-
+      POSTGRES_USER: ${AUTHENTIK_PG_USER:-authentik}
+      POSTGRES_PASSWORD: ${AUTHENTIK_PG_PASS:-please_change_this_password}
+      POSTGRES_DB: ${AUTHENTIK_PG_DB:-authentik}
     volumes:
-      # Конфиги/секреты Authelia лежат в ./authelia и монтируются в /config
-      - ./authelia:/config
-      # Логи — отдельно, чтобы удобно было чистить
-      - ./authelia/logs:/var/log/authelia
-
+      - authentik_postgres_data:/var/lib/postgresql/data
     networks:
       - platform-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
 
-    # Метки для Traefik (роутинг), CrowdSec, Diun, Homepage.
-    # Traefik сам обнаружит контейнер и настроит роутер для auth.${DOMAIN}.
+  redis:
+    image: redis:alpine
+    container_name: authentik-redis
+    restart: unless-stopped
+    networks:
+      - platform-network
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+
+  # --- Основные компоненты Authentik ---
+  authentik-server:
+    image: ghcr.io/goauthentik/server:2025.10
+    container_name: authentik-server
+    restart: unless-stopped
+    command: server
+    environment:
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_PG_PASS:-please_change_this_password}
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_PG_DB:-authentik}
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-please_change_this_to_a_long_random_string}
+      # Настройки для корректной работы за прокси
+      AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS: "172.16.0.0/12"
+      AUTHENTIK_WEB__PATH: "/"
+      # Начальные данные для администратора (опционально, но удобно)
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_ADMIN_PASS:-please_change_this_admin_password}
+      AUTHENTIK_BOOTSTRAP_EMAIL: ${AUTHENTIK_ADMIN_EMAIL:-admin@example.com}
+    volumes:
+      - ./media:/media
+      - ./certs:/certs
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - platform-network
     labels:
-      - "crowdsec.enable=true"
-      - "crowdsec.labels.type=authelia"
-      - "diun.enable=true"
-      - "homepage.group=Security"
-      - "homepage.name=Authelia"
-      - "homepage.icon=authelia.png"
-      - "homepage.href=https://auth.${DOMAIN}"
-      - "homepage.description=Authentication"
-
       - "traefik.enable=true"
-      - "traefik.http.routers.authelia.entrypoints=websecure"
-      - "traefik.http.routers.authelia.rule=Host(`auth.${DOMAIN}`)"
-      - "traefik.http.routers.authelia.tls=true"
-      - "traefik.http.routers.authelia.tls.certresolver=letsencrypt"
-      # chain-no-auth@file — цепочка middleware из traefik/config.yml,
-      # которая НЕ требует логина (иначе получится бесконечный редирект
-      # на портал самого Authelia)
-      - "traefik.http.routers.authelia.middlewares=chain-no-auth@file"
-
-    security_opt:
-      - no-new-privileges:true
-
-    # Authelia должна стартовать ПОСЛЕ lldap, иначе при первом
-    # запуске не сможет подключиться к каталогу.
+      - "traefik.http.routers.authentik.rule=Host(`auth.plyglo.com`)"
+      - "traefik.http.routers.authentik.entrypoints=websecure"
+      - "traefik.http.routers.authentik.tls=true"
+      - "traefik.http.routers.authentik.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.authentik.service=authentik"
+      - "traefik.http.services.authentik.loadbalancer.server.port=9000"
     depends_on:
-      - lldap
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  # ─────────────────────────────────────────────────────────────
-  # LLDAP — лёгкий LDAP-сервер с веб-интерфейсом.
-  # Здесь хранятся пользователи и группы.
-  # ─────────────────────────────────────────────────────────────
-  lldap:
-    image: lldap/lldap:stable
-    container_name: lldap
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:2025.10
+    container_name: authentik-worker
     restart: unless-stopped
-
+    command: worker
     environment:
-      TZ: ${TZ}
-
-      # ── Обязательные секреты ──
-      # JWT-секрет для сессий UI. После первого запуска НЕ менять.
-      LLDAP_JWT_SECRET: ${LLDAP_JWT_SECRET}
-      # Пароль встроенного администратора (логин всегда "admin").
-      LLDAP_LDAP_USER_PASS: ${LLDAP_ADMIN_PASSWORD}
-      # Корень каталога. Пользователи будут в ou=people,<base_dn>,
-      # группы — в ou=groups,<base_dn>.
-      LLDAP_LDAP_BASE_DN: ${LLDAP_BASE_DN}
-
-      # ── HTTP (веб-интерфейс) ──
-      LLDAP_HTTP_PORT: "17170"
-      LLDAP_HTTP_URL: https://ldap.${DOMAIN}
-
-      # ── LDAP (то, к чему подключается Authelia и другие сервисы) ──
-      LLDAP_LDAP_PORT: "3890"
-
-      # Опционально: почта админа (для отображения в UI)
-      # LLDAP_LDAP_USER_EMAIL: admin@${DOMAIN}
-
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_PG_PASS:-please_change_this_password}
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_PG_DB:-authentik}
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-please_change_this_to_a_long_random_string}
     volumes:
-      # SQLite-база lldap. Обязательно бэкапить.
-      - ./lldap/data:/data
-
+      - ./media:/media
+      - ./certs:/certs
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - platform-network
-
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Worker не должен быть доступен через Traefik
     labels:
-      - "diun.enable=true"
-      - "homepage.group=Security"
-      - "homepage.name=LLDAP"
-      - "homepage.icon=lldap.png"
-      - "homepage.href=https://ldap.${DOMAIN}"
-      - "homepage.description=LDAP directory"
+      - "traefik.enable=false"
 
+  # --- Прокси-аутпост для интеграции с Traefik (Forward Auth) ---
+  authentik-proxy:
+    image: ghcr.io/goauthentik/proxy:2025.10
+    container_name: authentik-proxy
+    restart: unless-stopped
+    environment:
+      AUTHENTIK_HOST: https://auth.plyglo.com
+      AUTHENTIK_INSECURE: "false"
+      # Токен нужно будет создать в интерфейсе Authentik и вставить сюда
+      AUTHENTIK_TOKEN: ${AUTHENTIK_PROXY_TOKEN:-please_generate_token_in_authentik_ui}
+      AUTHENTIK_HOST_BROWSER: https://auth.plyglo.com
+    networks:
+      - platform-network
+    labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.lldap.entrypoints=websecure"
-      - "traefik.http.routers.lldap.rule=Host(`ldap.${DOMAIN}`)"
-      - "traefik.http.routers.lldap.tls=true"
-      - "traefik.http.routers.lldap.tls.certresolver=letsencrypt"
-      # chain-no-auth@file — у lldap свой логин, не надо прятать за Authelia
-      - "traefik.http.routers.lldap.middlewares=chain-no-auth@file"
-      # Внутри контейнера UI слушает 17170 (LDAP — 3890)
-      - "traefik.http.services.lldap.loadbalancer.server.port=17170"
+      # Роутер для самого аутпоста, чтобы Traefik мог к нему обращаться
+      - "traefik.http.routers.authentik-proxy.rule=Host(`auth.plyglo.com`) && PathPrefix(`/outpost.goauthentik.io`)"
+      - "traefik.http.routers.authentik-proxy.entrypoints=websecure"
+      - "traefik.http.routers.authentik-proxy.tls=true"
+      - "traefik.http.routers.authentik-proxy.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.authentik-proxy.service=authentik-proxy"
+      - "traefik.http.services.authentik-proxy.loadbalancer.server.port=9000"
+      # Определяем middleware Forward Auth, которое будет использовать Traefik
+      - "traefik.http.middlewares.authentik-forwardauth.forwardauth.address=http://authentik-proxy:9000/outpost.goauthentik.io/auth/traefik"
+      - "traefik.http.middlewares.authentik-forwardauth.forwardauth.trustForwardHeader=true"
+      - "traefik.http.middlewares.authentik-forwardauth.forwardauth.authResponseHeaders=X-authentik-username,X-authentik-groups,X-authentik-entitlements,X-authentik-email,X-authentik-name,X-authentik-uid,X-authentik-jwt,X-authentik-meta-jwks,X-authentik-meta-outpost,X-authentik-meta-provider,X-authentik-meta-app,X-authentik-meta-version"
+    depends_on:
+      - authentik-server
 
-    security_opt:
-      - no-new-privileges:true
-
+volumes:
+  authentik_postgres_data:
