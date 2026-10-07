@@ -14,12 +14,12 @@ services:
     labels:
       - "traefik.enable=true"
       # Роутер для v1
-      - "traefik.http.routers.courses-v1.rule=Host(`api.plyglo.com`) && PathPrefix(`/v1`)"
-      - "traefik.http.routers.courses-v1.entrypoints=websecure"
-      - "traefik.http.routers.courses-v1.tls=true"
-      - "traefik.http.routers.courses-v1.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.courses-v1.middlewares=strip-v1" # chain-api@file можно оставить
-      - "traefik.http.services.courses-v1.loadbalancer.server.port=6060"
+      - "traefik.http.routers.courses.rule=Host(`api.plyglo.com`) && PathPrefix(`/v1`)"
+      - "traefik.http.routers.courses.entrypoints=websecure"
+      - "traefik.http.routers.courses.tls=true"
+      - "traefik.http.routers.courses.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.courses.middlewares=strip-v1" # chain-api@file можно оставить
+      - "traefik.http.services.courses.loadbalancer.server.port=6060"
       # Middleware для удаления префикса /v1
       - "traefik.http.middlewares.strip-v1.stripprefix.prefixes=/v1"
     networks:
