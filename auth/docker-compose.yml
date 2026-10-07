@@ -87,7 +87,7 @@ services:
       AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_PG_DB:-authentik}
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-please_change_this_to_a_long_random_string}
     volumes:
-      - ./media:/media
+      - ./data:/data
       - ./certs:/certs
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
