@@ -6,12 +6,8 @@
 *.log
 traefik/logs/
 
-#certs
+# Certs
 traefik/certs/
 
 # Docker
 docker-compose.override.yml
-traefik/letsencrypt/acme.json
-
-# Apps
-auth-api/
