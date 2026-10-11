@@ -11,13 +11,13 @@ services:
     labels:
       - "traefik.enable=true"
       # Роутер для v2 (защищённый)
-      - "traefik.http.routers.courses-protected.rule=Host(`api.plyglo.com`) && PathPrefix(`/v2`)"
-      - "traefik.http.routers.courses-protected.entrypoints=websecure"
-      - "traefik.http.routers.courses-protected.tls=true"
-      - "traefik.http.routers.courses-protected.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.courses-v2.rule=Host(`api.plyglo.com`) && PathPrefix(`/v2`)"
+      - "traefik.http.routers.courses-v2.entrypoints=websecure"
+      - "traefik.http.routers.courses-v2.tls=true"
+      - "traefik.http.routers.courses-v2.tls.certresolver=letsencrypt"
       # Порядок middleware: сначала strip-v2, потом authentik-forwardauth
-      - "traefik.http.routers.courses-protected.middlewares=strip-v2,authentik-forwardauth@docker"
-      - "traefik.http.services.courses-protected.loadbalancer.server.port=6060"
+      - "traefik.http.routers.courses-v2.middlewares=strip-v2,authentik-forwardauth@docker"
+      - "traefik.http.services.courses-v2.loadbalancer.server.port=6060"
       # Middleware для удаления префикса /v2
       - "traefik.http.middlewares.strip-v2.stripprefix.prefixes=/v2"
     networks:

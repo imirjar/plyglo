@@ -17,7 +17,7 @@ entryPoints:
 providers:
   docker:
     exposedByDefault: false
-    network: platform-network
+    network: auth-network
   file:
     filename: /etc/traefik/config.yml     # ← путь синхронизирован с монтированием
 
