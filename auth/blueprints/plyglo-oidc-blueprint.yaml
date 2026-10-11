@@ -14,20 +14,20 @@ entries:
     attrs:
       name: "Plyglo OIDC Provider"
       client_type: confidential
-      client_id: "ID9FYsYcnUzeANxL5larGz4wULb1MaP0korxulss"
+      client_id: "ID9FYsYcnUzeANxL5larGz4wULb1MaP0korxulss"  # 👈 ЯВНО УКАЗАН
       # client_secret будет сгенерирован автоматически. Его можно будет увидеть в UI.
-      
+
       # Обязательные потоки (Flow)
       authorization_flow: !Find [authentik_flows.flow, [slug, "default-provider-authorization-implicit-consent"]]
       invalidation_flow: !Find [authentik_flows.flow, [slug, "default-provider-invalidation-flow"]]
-      # Ключ для подписи токенов (используется стандартный самоподписанный сертификат)
+      # Ключ для подписи токенов
       signing_key: !Find [authentik_crypto.certificatekeypair, [name, "authentik Self-signed Certificate"]]
-      
-      # Время жизни токенов (при необходимости можно скорректировать)
+
+      # Время жизни токенов
       access_code_validity: "minutes=5"
       access_token_validity: "hours=1"
       refresh_token_validity: "days=30"
-      
+
       # Разрешенные URL для редиректа (Callback и Silent Renew)
       redirect_uris:
         - url: "https://study.plyglo.com/auth/callback"
@@ -39,8 +39,7 @@ entries:
         - url: "https://study.plyglo.com/"
           matching_mode: strict
 
-      # Scopes (маппинги свойств), которые будет использовать ваш фронтенд
-      # Важно: для автоматического обновления токенов (automaticSilentRenew) нужен offline_access
+      # Scopes (маппинги свойств)
       property_mappings:
         - !Find [authentik_core.propertymapping, [name, "authentik default OAuth Mapping: OpenID 'openid'"]]
         - !Find [authentik_core.propertymapping, [name, "authentik default OAuth Mapping: OpenID 'profile'"]]
@@ -55,6 +54,5 @@ entries:
     attrs:
       name: "Plyglo Study"
       slug: "plyglo"
-      # Привязка к созданному выше провайдеру
       provider: !KeyOf plyglo-oauth2-provider
       meta_launch_url: "https://study.plyglo.com"
