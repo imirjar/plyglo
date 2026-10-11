@@ -2,7 +2,6 @@ include:
   - auth/docker-compose.yml
   - traefik/docker-compose.yml
   - frontend/docker-compose.yml
-  - data/docker-compose.yml
   # API
   - api/v1/docker-compose.yml
   - api/v2/docker-compose.yml
