@@ -23,6 +23,7 @@ services:
       - authentik-network-private
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=plyglo_auth-network"   # 👈 вот это
       - "traefik.http.routers.authentik.rule=Host(`auth.plyglo.com`)"
       - "traefik.http.routers.authentik.entrypoints=websecure"
       - "traefik.http.routers.authentik.tls=true"
