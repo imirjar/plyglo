@@ -15,8 +15,8 @@
 ## TRAEFIK TLS
 ### Add acme directory and 
 ```
-touch traefik/acme.json traefik/acme-staging.json
-chmod 600 traefik/acme.json traefik/acme-staging.json
+touch traefik/certs/acme.json traefik/acme-staging.json
+chmod 600 traefik/certs/acme.json traefik/certs/acme-staging.json
 ```
 
 # Смените владельца на UID/GID, под которым работает пользователь в контейнере Authentik.
