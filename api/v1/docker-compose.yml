@@ -1,0 +1,27 @@
+services:
+  courses:
+    image: ghcr.io/imirjar/poliglotim-api:latest
+    container_name: courses
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      PORT: "6060"
+      DB_CONN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${PLYGLO_DB}
+    labels:
+      - "traefik.enable=true"
+      # Роутер для v1
+      - "traefik.http.routers.courses.rule=Host(`api.plyglo.com`) && PathPrefix(`/v1`)"
+      - "traefik.http.routers.courses.entrypoints=websecure"
+      - "traefik.http.routers.courses.tls=true"
+      - "traefik.http.routers.courses.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.courses.middlewares=strip-v1" # chain-api@file можно оставить
+      - "traefik.http.services.courses.loadbalancer.server.port=6060"
+      # Middleware для удаления префикса /v1
+      - "traefik.http.middlewares.strip-v1.stripprefix.prefixes=/v1"
+    networks:
+      - api-v1-network
+
+
+networks:
+  api-v1-network:
+    driver: bridge

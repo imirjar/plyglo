@@ -4,7 +4,7 @@
 
 # Logs
 *.log
-logs/
+traefik/logs/
 
 # Docker
 docker-compose.override.yml

@@ -1,0 +1,36 @@
+services:
+
+  postgresql:
+    image: postgres:16-alpine
+    container_name: authentik-postgresql
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${AUTHENTIK_PG_USER:-authentik}
+      POSTGRES_PASSWORD: ${AUTHENTIK_PG_PASS:-please_change_this_password}
+      POSTGRES_DB: ${AUTHENTIK_PG_DB:-authentik}
+    volumes:
+      - authentik_postgres_data:/var/lib/postgresql/data
+    networks:
+      - auth-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
+
+  redis:
+    image: redis:alpine
+    container_name: authentik-redis
+    restart: unless-stopped
+    networks:
+      - auth-network
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+
+volumes:
+  authentik_postgres_data:

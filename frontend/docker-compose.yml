@@ -1,0 +1,37 @@
+services:
+  site:
+    image: ghcr.io/imirjar/plyglo-website:latest
+    container_name: site
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.site.rule=Host(`plyglo.com`)"
+      - "traefik.http.routers.site.entrypoints=websecure"
+      - "traefik.http.routers.site.tls=true"
+      - "traefik.http.routers.site.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.site.middlewares=chain-no-auth@file"
+      - "traefik.http.services.site.loadbalancer.server.port=80"
+    networks:
+      - frontend-network
+
+  study:
+    image: ghcr.io/imirjar/plyglo-expo:latest
+    container_name: study
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      Port: 3000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.study.rule=Host(`study.plyglo.com`)"
+      - "traefik.http.routers.study.entrypoints=websecure"
+      - "traefik.http.routers.study.tls=true"
+      - "traefik.http.routers.study.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.study.middlewares=chain-no-auth@file"
+      - "traefik.http.services.study.loadbalancer.server.port=3000"
+    networks:
+      - frontend-network
