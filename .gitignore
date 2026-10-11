@@ -7,7 +7,8 @@
 traefik/logs/
 
 # Certs
-traefik/certs/
+traefik/certs/acme.json
+traefik/certs/acme-staging.json
 
 # Docker
 docker-compose.override.yml
