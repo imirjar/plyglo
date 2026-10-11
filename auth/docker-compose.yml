@@ -23,6 +23,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - auth-network
+      - authentik-network-private
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.authentik.rule=Host(`auth.plyglo.com`)"
@@ -53,13 +54,7 @@ services:
       - ./certs:/certs
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      - auth-network
-    depends_on:
-      postgresql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    # Worker не должен быть доступен через Traefik
+      - authentik-network-private
     labels:
       - "traefik.enable=false"
 
@@ -76,6 +71,7 @@ services:
       AUTHENTIK_HOST_BROWSER: https://auth.plyglo.com
     networks:
       - auth-network
+      - authentik-network-private
     labels:
       - "traefik.enable=true"
       # Роутер для самого аутпоста, чтобы Traefik мог к нему обращаться
@@ -94,4 +90,6 @@ services:
 
 networks:
   auth-network:
+    driver: bridge
+  authentik-network-private:
     driver: bridge
