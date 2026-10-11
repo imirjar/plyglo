@@ -6,6 +6,7 @@
 *.log
 traefik/logs/
 
+#certs
 traefik/certs/
 
 # Docker
