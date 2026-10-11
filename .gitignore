@@ -6,6 +6,8 @@
 *.log
 traefik/logs/
 
+traefik/certs/
+
 # Docker
 docker-compose.override.yml
 traefik/letsencrypt/acme.json
