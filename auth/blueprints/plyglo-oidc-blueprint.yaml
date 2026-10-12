@@ -31,6 +31,8 @@ entries:
 
       # Разрешенные URL для редиректа (Callback и Silent Renew)
       redirect_uris:
+        - url: "https://study.plyglo.com/redirect"
+          matching_mode: strict
         - url: "https://study.plyglo.com/auth/callback"
           matching_mode: strict
         - url: "https://study.plyglo.com/auth/silent-renew"
