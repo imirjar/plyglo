@@ -1,6 +1,5 @@
 services:
-
-    courses-v2:
+  courses-v2:
     image: ghcr.io/imirjar/poliglotim-api:latest
     container_name: courses-v2
     restart: unless-stopped
