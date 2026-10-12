@@ -86,6 +86,7 @@ services:
 
 networks:
   auth-network:
-    driver: bridge
+    external: true
+    name: plyglo_auth-network     # ← явно указываем реальное имя
   authentik-network-private:
     driver: bridge

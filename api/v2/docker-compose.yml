@@ -44,7 +44,7 @@ services:
       - "traefik.http.routers.courses-v2-auth.entrypoints=websecure"
       - "traefik.http.routers.courses-v2-auth.tls=true"
       - "traefik.http.routers.courses-v2-auth.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.courses-v2-auth.middlewares=cors-api@file,strip-v2,authentik@file"
+      - "traefik.http.routers.courses-v2-auth.middlewares=cors-api@file,strip-v2,authentik-forwardauth@docker"
       - "traefik.http.routers.courses-v2-auth.service=courses-v2"
       - "traefik.http.routers.courses-v2-auth.priority=100"
 
@@ -65,3 +65,4 @@ services:
 networks:
   api-v2-network:
     driver: bridge
+    
