@@ -16,7 +16,8 @@ services:
       - "traefik.http.routers.courses-v2.tls=true"
       - "traefik.http.routers.courses-v2.tls.certresolver=letsencrypt"
       # Порядок middleware: сначала strip-v2, потом authentik-forwardauth
-      - "traefik.http.routers.courses-v2.middlewares=strip-v2,authentik-forwardauth@docker"
+      - "traefik.http.routers.courses-v2.middlewares=strip-v2"
+      # - "traefik.http.routers.courses-v2.middlewares=strip-v2,authentik-forwardauth@docker"
       - "traefik.http.services.courses-v2.loadbalancer.server.port=6060"
       # Middleware для удаления префикса /v2
       - "traefik.http.middlewares.strip-v2.stripprefix.prefixes=/v2"
