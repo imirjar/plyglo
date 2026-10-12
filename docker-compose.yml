@@ -2,6 +2,26 @@ include:
   - auth/docker-compose.yml
   - traefik/docker-compose.yml
   - frontend/docker-compose.yml
-  # API
   - api/v1/docker-compose.yml
   - api/v2/docker-compose.yml
+
+networks:
+  auth-network:
+    external: true
+    name: plyglo_auth-network
+
+  authentik-network-private:
+    external: true
+    name: plyglo_authentik-network-private
+
+  api-v1-network:
+    external: true
+    name: plyglo_api-v1-network
+
+  api-v2-network:
+    external: true
+    name: plyglo_api-v2-network
+
+  frontend-network:
+    external: true
+    name: plyglo_frontend-network

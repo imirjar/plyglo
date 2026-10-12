@@ -62,7 +62,3 @@ services:
       - api-v2-network
       - auth-network      # ← добавьте, если Traefik «сидит» в auth-network
 
-networks:
-  api-v2-network:
-    driver: bridge
-    

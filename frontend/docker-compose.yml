@@ -33,7 +33,3 @@ services:
       - "traefik.http.services.study.loadbalancer.server.port=3000"
     networks:
       - frontend-network
-
-networks:
-  frontend-network:
-    driver: bridge

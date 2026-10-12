@@ -20,8 +20,3 @@ services:
       - "traefik.http.middlewares.strip-v1.stripprefix.prefixes=/v1"
     networks:
       - api-v1-network
-
-
-networks:
-  api-v1-network:
-    driver: bridge
