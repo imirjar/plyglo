@@ -59,3 +59,30 @@ entries:
       slug: "plyglo"
       provider: !KeyOf plyglo-oauth2-provider
       meta_launch_url: "https://study.plyglo.com"
+
+    # 3. Proxy Provider для Forward Auth на api.plyglo.com
+  - id: plyglo-api-proxy-provider
+    model: authentik_providers_proxy.proxyprovider
+    identifiers:
+      name: "Plyglo API Proxy Provider"
+    attrs:
+      name: "Plyglo API Proxy Provider"
+      # Режим forward_auth — именно то, что использует Traefik
+      mode: forward_single
+      # Внешний хост, который защищаем
+      external_host: "https://api.plyglo.com"
+      # Куда редиректить после логина (необязательно)
+      # internal_host: "http://courses-v2:6060"
+      authorization_flow: !Find [authentik_flows.flow, [slug, "default-provider-authorization-implicit-consent"]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, "default-provider-invalidation-flow"]]
+
+  # 4. Application для API, привязанное к Proxy Provider
+  - id: plyglo-api-application
+    model: authentik_core.application
+    identifiers:
+      slug: "plyglo-api"
+    attrs:
+      name: "Plyglo API"
+      slug: "plyglo-api"
+      provider: !KeyOf plyglo-api-proxy-provider
+      meta_launch_url: "https://api.plyglo.com"
