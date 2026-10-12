@@ -14,7 +14,7 @@ entries:
       name: "Plyglo OIDC Provider"
     attrs:
       name: "Plyglo OIDC Provider"
-      client_type: confidential
+      client_type: public
       client_id: "ID9FYsYcnUzeANxL5larGz4wULb1MaP0korxulss"  # 👈 ЯВНО УКАЗАН
       # client_secret будет сгенерирован автоматически. Его можно будет увидеть в UI.
 
