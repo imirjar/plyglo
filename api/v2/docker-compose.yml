@@ -1,6 +1,6 @@
 services:
 
-  courses-v2:
+    courses-v2:
     image: ghcr.io/imirjar/poliglotim-api:latest
     container_name: courses-v2
     restart: unless-stopped
@@ -10,16 +10,27 @@ services:
       DB_CONN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${PLYGLO_DB}
     labels:
       - "traefik.enable=true"
-      # Роутер для v2 (защищённый)
-      - "traefik.http.routers.courses-v2.rule=Host(`api.plyglo.com`) && PathPrefix(`/v2`)"
-      - "traefik.http.routers.courses-v2.entrypoints=websecure"
-      - "traefik.http.routers.courses-v2.tls=true"
-      - "traefik.http.routers.courses-v2.tls.certresolver=letsencrypt"
-      # Порядок middleware: сначала strip-v2, потом authentik-forwardauth
-      - "traefik.http.routers.courses-v2.middlewares=strip-v2"
-      # - "traefik.http.routers.courses-v2.middlewares=strip-v2,authentik-forwardauth@docker"
+
+      # --- Открытый роутер для /courses и /course ---
+      - "traefik.http.routers.courses-v2-public.rule=Host(`api.plyglo.com`) && (PathPrefix(`/v2/courses`) || PathPrefix(`/v2/course`))"
+      - "traefik.http.routers.courses-v2-public.entrypoints=websecure"
+      - "traefik.http.routers.courses-v2-public.tls=true"
+      - "traefik.http.routers.courses-v2-public.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.courses-v2-public.middlewares=strip-v2"
+      - "traefik.http.routers.courses-v2-public.service=courses-v2"
+
+      # --- Защищённый роутер для /chapters, /chapter, /lessons, /lesson ---
+      - "traefik.http.routers.courses-v2-auth.rule=Host(`api.plyglo.com`) && (PathPrefix(`/v2/chapters`) || PathPrefix(`/v2/chapter`) || PathPrefix(`/v2/lessons`) || PathPrefix(`/v2/lesson`))"
+      - "traefik.http.routers.courses-v2-auth.entrypoints=websecure"
+      - "traefik.http.routers.courses-v2-auth.tls=true"
+      - "traefik.http.routers.courses-v2-auth.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.courses-v2-auth.middlewares=strip-v2,authentik@file"
+      - "traefik.http.routers.courses-v2-auth.service=courses-v2"
+
+      # --- Определение сервиса Traefik ---
       - "traefik.http.services.courses-v2.loadbalancer.server.port=6060"
-      # Middleware для удаления префикса /v2
+
+      # --- Middleware для удаления префикса /v2 ---
       - "traefik.http.middlewares.strip-v2.stripprefix.prefixes=/v2"
     networks:
       - api-v2-network

@@ -17,7 +17,7 @@ services:
     volumes:
       - ./media:/media
       - ./certs:/certs
-      - /var/run/docker.sock:/var/run/docker.sock
+      # - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - auth-network
       - authentik-network-private
