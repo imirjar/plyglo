@@ -1,4 +1,5 @@
 services:
+
   courses-v2:
     image: ghcr.io/imirjar/poliglotim-api:latest
     container_name: courses-v2
@@ -10,29 +11,56 @@ services:
     labels:
       - "traefik.enable=true"
 
-      # --- Открытый роутер для /courses и /course ---
+      # ============================================================
+      # 1. PREFLIGHT: OPTIONS-запросы без Authentik и без strip-v2
+      #    Самый высокий приоритет, чтобы перехватывать раньше всех.
+      # ============================================================
+      - "traefik.http.routers.courses-v2-preflight.rule=Host(`api.plyglo.com`) && Method(`OPTIONS`)"
+      - "traefik.http.routers.courses-v2-preflight.entrypoints=websecure"
+      - "traefik.http.routers.courses-v2-preflight.tls=true"
+      - "traefik.http.routers.courses-v2-preflight.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.courses-v2-preflight.middlewares=cors-api@file"
+      - "traefik.http.routers.courses-v2-preflight.service=courses-v2"
+      - "traefik.http.routers.courses-v2-preflight.priority=300"
+
+      # ============================================================
+      # 2. ПУБЛИЧНЫЙ РОУТЕР: /v2/courses*, /v2/course*
+      #    Без Authentik, только CORS + strip-v2.
+      # ============================================================
       - "traefik.http.routers.courses-v2-public.rule=Host(`api.plyglo.com`) && (PathPrefix(`/v2/courses`) || PathPrefix(`/v2/course`))"
       - "traefik.http.routers.courses-v2-public.entrypoints=websecure"
       - "traefik.http.routers.courses-v2-public.tls=true"
       - "traefik.http.routers.courses-v2-public.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.courses-v2-public.middlewares=strip-v2"
+      - "traefik.http.routers.courses-v2-public.middlewares=cors-api@file,strip-v2"
       - "traefik.http.routers.courses-v2-public.service=courses-v2"
+      - "traefik.http.routers.courses-v2-public.priority=200"
 
-      # --- Защищённый роутер для /chapters, /chapter, /lessons, /lesson ---
+      # ============================================================
+      # 3. ЗАЩИЩЁННЫЙ РОУТЕР: /v2/chapters*, /v2/chapter*,
+      #                        /v2/lessons*,  /v2/lesson*
+      #    CORS → strip-v2 → authentik.
+      # ============================================================
       - "traefik.http.routers.courses-v2-auth.rule=Host(`api.plyglo.com`) && (PathPrefix(`/v2/chapters`) || PathPrefix(`/v2/chapter`) || PathPrefix(`/v2/lessons`) || PathPrefix(`/v2/lesson`))"
       - "traefik.http.routers.courses-v2-auth.entrypoints=websecure"
       - "traefik.http.routers.courses-v2-auth.tls=true"
       - "traefik.http.routers.courses-v2-auth.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.courses-v2-auth.middlewares=strip-v2,authentik@file"
+      - "traefik.http.routers.courses-v2-auth.middlewares=cors-api@file,strip-v2,authentik@file"
       - "traefik.http.routers.courses-v2-auth.service=courses-v2"
+      - "traefik.http.routers.courses-v2-auth.priority=100"
 
-      # --- Определение сервиса Traefik ---
+      # ============================================================
+      # 4. Сервис Traefik (порт контейнера)
+      # ============================================================
       - "traefik.http.services.courses-v2.loadbalancer.server.port=6060"
 
-      # --- Middleware для удаления префикса /v2 ---
+      # ============================================================
+      # 5. Middleware strip-v2 (определяется тут же, в Docker-провайдере)
+      # ============================================================
       - "traefik.http.middlewares.strip-v2.stripprefix.prefixes=/v2"
+
     networks:
       - api-v2-network
+      - auth-network      # ← добавьте, если Traefik «сидит» в auth-network
 
 networks:
   api-v2-network:
