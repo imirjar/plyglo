@@ -6,13 +6,13 @@ include:
   - api/v2/docker-compose.yml
 
 networks:
-  auth-network:
-    external: true
-    name: plyglo_auth-network
+  # auth-network:
+  #   external: true
+  #   name: plyglo_auth-network
 
-  authentik-network-private:
-    external: true
-    name: plyglo_authentik-network-private
+  # authentik-network-private:
+  #   external: true
+  #   name: plyglo_authentik-network-private
 
   api-v1-network:
     external: true
@@ -22,6 +22,10 @@ networks:
     external: true
     name: plyglo_api-v2-network
 
-  frontend-network:
+  # frontend-network:
+  #   external: true
+  #   name: plyglo_frontend-network
+
+  platform-network:
     external: true
-    name: plyglo_frontend-network
+    name: plyglo_platform-network

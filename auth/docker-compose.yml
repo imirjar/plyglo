@@ -19,11 +19,9 @@ services:
       - ./certs:/certs
       # - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      - auth-network
-      - authentik-network-private
+      - platform-network
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=plyglo_auth-network"   # 👈 вот это
       - "traefik.http.routers.authentik.rule=Host(`auth.plyglo.com`)"
       - "traefik.http.routers.authentik.entrypoints=websecure"
       - "traefik.http.routers.authentik.tls=true"
@@ -50,7 +48,7 @@ services:
       - ./blueprints:/blueprints/custom
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      - authentik-network-private
+      - platform-network
     labels:
       - "traefik.enable=false"
 
@@ -66,8 +64,7 @@ services:
       AUTHENTIK_TOKEN: ${AUTHENTIK_PROXY_TOKEN:-please_generate_token_in_authentik_ui}
       AUTHENTIK_HOST_BROWSER: https://auth.plyglo.com
     networks:
-      - auth-network
-      - authentik-network-private
+      - platform-network
     labels:
       - "traefik.enable=true"
       # Роутер для самого аутпоста, чтобы Traefik мог к нему обращаться

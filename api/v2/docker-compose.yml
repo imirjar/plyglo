@@ -60,5 +60,5 @@ services:
 
     networks:
       - api-v2-network
-      - auth-network      # ← добавьте, если Traefik «сидит» в auth-network
+      - platform-network
 

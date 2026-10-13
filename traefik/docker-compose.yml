@@ -19,7 +19,6 @@ services:
       - ./certs/acme-staging.json:/etc/traefik/acme-staging.json
       - ./logs:/var/log/traefik
     networks:
-      - frontend-network
-      - auth-network
+      - platform-network
       - api-v1-network
       - api-v2-network

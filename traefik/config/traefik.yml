@@ -17,7 +17,7 @@ entryPoints:
 providers:
   docker:
     exposedByDefault: false
-    network: plyglo_auth-network     # ← с префиксом проекта
+    network: plyglo_platform-network     # ← с префиксом проекта
   file:
     filename: /etc/traefik/config.yml     # ← путь синхронизирован с монтированием
 
